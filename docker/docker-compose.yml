@@ -1,0 +1,71 @@
+version: "3.9"
+
+services:
+  mysql:
+    image: mysql:latest
+    container_name: labelreader-db
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-rootpassword}
+      MYSQL_DATABASE: ${DB_NAME:-labelreader}
+      MYSQL_USER: ${DB_USER:-labelreader_user}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-labelreader_pass}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - labelreader-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ../apps/backend
+      dockerfile: Dockerfile
+    container_name: labelreader-backend
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/${DB_NAME:-labelreader}
+      SPRING_DATASOURCE_USERNAME: ${DB_USER:-labelreader_user}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-labelreader_pass}
+      JWT_SECRET: ${JWT_SECRET:-your-secret-key-change-in-production-must-be-at-least-256-bits}
+      FILE_UPLOAD_PATH: /app/uploads
+    ports:
+      - "8080:8080"
+    volumes:
+      - backend_uploads:/app/uploads
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - labelreader-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  frontend:
+    build:
+      context: ..
+      dockerfile: apps/frontend/Dockerfile
+    container_name: labelreader-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - labelreader-network
+    environment:
+      API_URL: http://backend:8080
+
+volumes:
+  mysql_data:
+  backend_uploads:
+
+networks:
+  labelreader-network:
+    driver: bridge

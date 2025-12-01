@@ -1,0 +1,139 @@
+<div class="detail-container">
+  <!-- Loading State -->
+  <div *ngIf="isLoading" class="loading-container">
+    <div class="spinner"></div>
+    <p>Loading submission...</p>
+  </div>
+
+  <!-- Submission Detail -->
+  <div *ngIf="!isLoading && submission" class="detail-content">
+    <button class="btn-secondary back-btn" (click)="goBack()">
+      ← Back to Discovery
+    </button>
+
+    <div class="submission-header">
+      <div class="header-icon">🎵</div>
+      <div class="header-info">
+        <h1>{{ submission.title }}</h1>
+        <p class="artist-name">by {{ submission.artistName }}</p>
+      </div>
+    </div>
+
+    <div class="submission-grid">
+      <!-- Left Column - Details -->
+      <div class="details-section">
+        <div class="info-card">
+          <h2>Track Information</h2>
+          
+          <div class="info-grid">
+            <div class="info-item" *ngIf="submission.genre">
+              <span class="label">Genre:</span>
+              <span class="value">{{ submission.genre }}</span>
+            </div>
+            <div class="info-item" *ngIf="submission.subGenre">
+              <span class="label">Sub-Genre:</span>
+              <span class="value">{{ submission.subGenre }}</span>
+            </div>
+            <div class="info-item" *ngIf="submission.bpm">
+              <span class="label">BPM:</span>
+              <span class="value">{{ submission.bpm }}</span>
+            </div>
+            <div class="info-item" *ngIf="submission.keySignature">
+              <span class="label">Key:</span>
+              <span class="value">{{ submission.keySignature }}</span>
+            </div>
+            <div class="info-item">
+              <span class="label">Status:</span>
+              <span
+                class="status-badge"
+                [class.status-pending]="submission.submissionStatus === 'PENDING'"
+                [class.status-approved]="submission.submissionStatus === 'APPROVED'"
+              >
+                {{ submission.submissionStatus }}
+              </span>
+            </div>
+          </div>
+
+          <div class="description-section" *ngIf="submission.description">
+            <h3>Description</h3>
+            <p>{{ submission.description }}</p>
+          </div>
+
+          <div class="stats-section">
+            <div class="stat-box">
+              <span class="stat-value">{{ submission.playCount }}</span>
+              <span class="stat-label">Plays</span>
+            </div>
+            <div class="stat-box" *ngIf="submission.totalRatings > 0">
+              <span class="stat-value">{{ submission.averageRating.toFixed(1) }} ⭐</span>
+              <span class="stat-label">{{ submission.totalRatings }} Ratings</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column - Rating -->
+      <div class="rating-section">
+        <div class="rating-card">
+          <h2>{{ existingRating ? 'Update Your Rating' : 'Rate This Track' }}</h2>
+
+          <div *ngIf="successMessage" class="success-alert">
+            {{ successMessage }}
+          </div>
+
+          <div *ngIf="errorMessage" class="error-alert">
+            {{ errorMessage }}
+          </div>
+
+          <form [formGroup]="ratingForm" (ngSubmit)="onSubmit()">
+            <div class="form-group">
+              <label>Your Rating *</label>
+              <div class="star-rating">
+                <button
+                  type="button"
+                  *ngFor="let star of [1, 2, 3, 4, 5]"
+                  class="star-btn"
+                  [class.active]="ratingForm.get('rating')?.value >= star"
+                  (click)="setRating(star)"
+                >
+                  ⭐
+                </button>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="reviewText">Review (Optional)</label>
+              <textarea
+                id="reviewText"
+                formControlName="reviewText"
+                rows="6"
+                placeholder="Share your thoughts about this track..."
+              ></textarea>
+            </div>
+
+            <div class="form-group checkbox-group">
+              <label class="checkbox-label">
+                <input type="checkbox" formControlName="isInterested" />
+                <span>I'm interested in signing this artist</span>
+              </label>
+            </div>
+
+            <button
+              type="submit"
+              class="btn-primary btn-full"
+              [disabled]="ratingForm.invalid || isSubmitting"
+            >
+              {{ isSubmitting ? 'Submitting...' : existingRating ? 'Update Rating' : 'Submit Rating' }}
+            </button>
+          </form>
+
+          <div *ngIf="existingRating" class="existing-rating-info">
+            <p class="info-text">
+              You rated this track on {{ existingRating.createdAt | date : 'short' }}
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

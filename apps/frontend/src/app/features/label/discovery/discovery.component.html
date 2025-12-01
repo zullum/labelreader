@@ -1,0 +1,123 @@
+<div class="discovery-container">
+  <!-- Header -->
+  <header class="discovery-header">
+    <div class="header-content">
+      <h1>Discover Music</h1>
+      <button class="btn-secondary" (click)="logout()">Logout</button>
+    </div>
+  </header>
+
+  <!-- Filters -->
+  <div class="filters-section">
+    <div class="filter-group">
+      <label>Genre:</label>
+      <div class="genre-pills">
+        <button
+          *ngFor="let genre of genres"
+          class="genre-pill"
+          [class.active]="selectedGenre === genre || (selectedGenre === '' && genre === 'All')"
+          (click)="onGenreChange(genre)"
+        >
+          {{ genre }}
+        </button>
+      </div>
+    </div>
+
+    <div class="filter-group">
+      <label>Status:</label>
+      <select [(ngModel)]="selectedStatus" (change)="onStatusChange(selectedStatus)" class="status-select">
+        <option *ngFor="let status of statuses" [value]="status.value">
+          {{ status.label }}
+        </option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="isLoading" class="loading-container">
+    <div class="spinner"></div>
+    <p>Loading submissions...</p>
+  </div>
+
+  <!-- Submissions Grid -->
+  <div *ngIf="!isLoading" class="submissions-grid">
+    <div *ngIf="submissions.length === 0" class="empty-state">
+      <p>No submissions found. Try adjusting your filters.</p>
+    </div>
+
+    <div
+      *ngFor="let submission of submissions"
+      class="submission-card"
+      (click)="viewSubmission(submission.id)"
+    >
+      <div class="card-header">
+        <div class="music-icon">🎵</div>
+        <div class="submission-info">
+          <h3>{{ submission.title }}</h3>
+          <p class="artist-name">{{ submission.artistName }}</p>
+        </div>
+      </div>
+
+      <div class="card-body">
+        <div class="metadata">
+          <span class="genre-tag" *ngIf="submission.genre">
+            {{ submission.genre }}
+          </span>
+          <span class="bpm-tag" *ngIf="submission.bpm">
+            {{ submission.bpm }} BPM
+          </span>
+          <span class="key-tag" *ngIf="submission.keySignature">
+            {{ submission.keySignature }}
+          </span>
+        </div>
+
+        <p class="description" *ngIf="submission.description">
+          {{ submission.description.substring(0, 100) }}
+          {{ submission.description.length > 100 ? '...' : '' }}
+        </p>
+      </div>
+
+      <div class="card-footer">
+        <div class="stats">
+          <span class="stat-item">
+            <span class="stat-icon">▶️</span>
+            {{ submission.playCount }}
+          </span>
+          <span class="stat-item" *ngIf="submission.totalRatings > 0">
+            <span class="stat-icon">⭐</span>
+            {{ submission.averageRating.toFixed(1) }}
+            ({{ submission.totalRatings }})
+          </span>
+        </div>
+        <span
+          class="status-badge"
+          [class.status-pending]="submission.submissionStatus === 'PENDING'"
+          [class.status-approved]="submission.submissionStatus === 'APPROVED'"
+        >
+          {{ submission.submissionStatus }}
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pagination -->
+  <div *ngIf="!isLoading && submissions.length > 0" class="pagination">
+    <button
+      class="btn-secondary"
+      (click)="previousPage()"
+      [disabled]="currentPage === 0"
+    >
+      Previous
+    </button>
+    <span class="page-info">
+      Page {{ currentPage + 1 }} of {{ totalPages }}
+    </span>
+    <button
+      class="btn-secondary"
+      (click)="nextPage()"
+      [disabled]="currentPage >= totalPages - 1"
+    >
+      Next
+    </button>
+  </div>
+</div>

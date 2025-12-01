@@ -1,0 +1,177 @@
+<div class="upload-container">
+  <div class="upload-header">
+    <h1>Upload Track</h1>
+    <button class="btn-secondary" (click)="cancel()">Cancel</button>
+  </div>
+
+  <div class="upload-content">
+    <!-- File Upload Area -->
+    <div
+      class="upload-zone"
+      [class.drag-over]="isDragOver"
+      [class.has-file]="selectedFile"
+      (drop)="onDrop($event)"
+      (dragover)="onDragOver($event)"
+      (dragleave)="onDragLeave($event)"
+    >
+      <input
+        type="file"
+        #fileInput
+        accept=".mp3,.wav,.flac,audio/*"
+        (change)="onFileSelected($event)"
+        style="display: none"
+      />
+
+      <div *ngIf="!selectedFile" class="upload-prompt">
+        <div class="upload-icon">🎵</div>
+        <h3>Drag and drop your audio file here</h3>
+        <p>or</p>
+        <button class="btn-primary" (click)="fileInput.click()">
+          Choose File
+        </button>
+        <p class="upload-hint">
+          Supported formats: MP3, WAV, FLAC (Max 50MB)
+        </p>
+      </div>
+
+      <div *ngIf="selectedFile" class="file-info">
+        <div class="file-icon">🎵</div>
+        <div class="file-details">
+          <h4>{{ selectedFile.name }}</h4>
+          <p>{{ formatFileSize(selectedFile.size) }}</p>
+        </div>
+        <button
+          class="remove-file-btn"
+          (click)="removeFile()"
+          *ngIf="!isUploading"
+        >
+          ✕
+        </button>
+      </div>
+
+      <div *ngIf="isUploading" class="upload-progress">
+        <div class="progress-bar">
+          <div
+            class="progress-fill"
+            [style.width.%]="uploadProgress"
+          ></div>
+        </div>
+        <p>Uploading... {{ uploadProgress }}%</p>
+      </div>
+    </div>
+
+    <!-- Error Message -->
+    <div class="error-alert" *ngIf="errorMessage">
+      {{ errorMessage }}
+    </div>
+
+    <!-- Metadata Form -->
+    <form [formGroup]="uploadForm" (ngSubmit)="onSubmit()" class="metadata-form">
+      <div class="form-row">
+        <div class="form-group">
+          <label for="title">Track Title *</label>
+          <input
+            type="text"
+            id="title"
+            formControlName="title"
+            placeholder="Enter track title"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="artistName">Artist Name *</label>
+          <input
+            type="text"
+            id="artistName"
+            formControlName="artistName"
+            placeholder="Enter artist name"
+          />
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="genre">Genre</label>
+          <input
+            type="text"
+            id="genre"
+            formControlName="genre"
+            placeholder="e.g., Electronic, Hip Hop"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="subGenre">Sub-Genre</label>
+          <input
+            type="text"
+            id="subGenre"
+            formControlName="subGenre"
+            placeholder="e.g., House, Trap"
+          />
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="bpm">BPM</label>
+          <input
+            type="number"
+            id="bpm"
+            formControlName="bpm"
+            placeholder="120"
+            min="1"
+            max="300"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="keySignature">Key</label>
+          <input
+            type="text"
+            id="keySignature"
+            formControlName="keySignature"
+            placeholder="e.g., Am, C#"
+          />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="description">Description</label>
+        <textarea
+          id="description"
+          formControlName="description"
+          rows="4"
+          placeholder="Tell labels about your track..."
+        ></textarea>
+      </div>
+
+      <div class="form-group">
+        <label for="lyrics">Lyrics (Optional)</label>
+        <textarea
+          id="lyrics"
+          formControlName="lyrics"
+          rows="6"
+          placeholder="Paste your lyrics here..."
+        ></textarea>
+      </div>
+
+      <div class="form-actions">
+        <button
+          type="button"
+          class="btn-secondary"
+          (click)="cancel()"
+          [disabled]="isUploading"
+        >
+          Cancel
+        </button>
+        <button
+          type="submit"
+          class="btn-primary"
+          [disabled]="uploadForm.invalid || !selectedFile || isUploading"
+        >
+          {{ isUploading ? 'Uploading...' : 'Upload Track' }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
