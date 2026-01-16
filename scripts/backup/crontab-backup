@@ -1,0 +1,23 @@
+# LabelReader Database Backup Cron Jobs
+#
+# Installation:
+# 1. Update environment variables in /etc/environment or .env file
+# 2. Install crontab: crontab scripts/backup/crontab-backup
+# 3. Verify installation: crontab -l
+#
+# Schedule:
+# - Daily backup at 2 AM
+# - Weekly backup on Sunday at 3 AM
+# - Monthly backup on 1st of each month at 4 AM
+
+# Daily backup at 2:00 AM
+0 2 * * * /path/to/labelreader/scripts/backup/backup-database.sh >> /var/log/labelreader-backup.log 2>&1
+
+# Weekly backup on Sunday at 3:00 AM
+0 3 * * 0 /path/to/labelreader/scripts/backup/backup-database.sh >> /var/log/labelreader-backup-weekly.log 2>&1
+
+# Monthly backup on 1st at 4:00 AM
+0 4 1 * * /path/to/labelreader/scripts/backup/backup-database.sh >> /var/log/labelreader-backup-monthly.log 2>&1
+
+# Cleanup old logs (keep last 30 days)
+0 5 * * * find /var/log -name "labelreader-backup*.log" -type f -mtime +30 -delete

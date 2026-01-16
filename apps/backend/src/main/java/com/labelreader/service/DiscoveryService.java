@@ -8,6 +8,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 public class DiscoveryService {
@@ -29,6 +32,34 @@ public class DiscoveryService {
         } else {
             submissions = submissionRepository.findAll(pageable);
         }
+
+        return submissions.map(this::mapToDto);
+    }
+
+    public Page<SubmissionDto> searchSubmissions(
+            String query,
+            String genre,
+            Integer minBpm,
+            Integer maxBpm,
+            LocalDateTime startDate,
+            LocalDateTime endDate,
+            Pageable pageable) {
+
+        Page<Submission> submissions = submissionRepository.searchSubmissions(
+                query, genre, minBpm, maxBpm, startDate, endDate, pageable);
+
+        return submissions.map(this::mapToDto);
+    }
+
+    public Page<SubmissionDto> filterSubmissions(
+            List<String> genres,
+            Integer minBpm,
+            Integer maxBpm,
+            Double minRating,
+            Pageable pageable) {
+
+        Page<Submission> submissions = submissionRepository.findByFilters(
+                genres, minBpm, maxBpm, minRating, pageable);
 
         return submissions.map(this::mapToDto);
     }

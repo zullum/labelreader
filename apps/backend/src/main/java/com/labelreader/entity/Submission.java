@@ -23,6 +23,10 @@ public class Submission {
     @Column(name = "artist_id", nullable = false)
     private Long artistId;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "artist_id", insertable = false, updatable = false)
+    private User user;
+
     @Column(nullable = false)
     private String title;
 

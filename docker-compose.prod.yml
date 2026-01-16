@@ -1,0 +1,147 @@
+version: "3.9"
+
+services:
+  mysql:
+    image: mysql:latest
+    container_name: labelreader-db-prod
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${DB_NAME:-labelreader}
+      MYSQL_USER: ${DB_USER:-labelreader_user}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - mysql_data_prod:/var/lib/mysql
+      - ./apps/backend/src/main/resources/db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    networks:
+      - labelreader-network-prod
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  backend:
+    build:
+      context: ./apps/backend
+      dockerfile: Dockerfile
+      args:
+        SPRING_PROFILES_ACTIVE: production
+    image: labelreader-backend:${VERSION:-latest}
+    container_name: labelreader-backend-prod
+    restart: always
+    environment:
+      SPRING_PROFILES_ACTIVE: production
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/${DB_NAME:-labelreader}?useSSL=true&requireSSL=true&verifyServerCertificate=false
+      SPRING_DATASOURCE_USERNAME: ${DB_USER:-labelreader_user}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_ACCESS_TOKEN_EXPIRATION: ${JWT_ACCESS_TOKEN_EXPIRATION:-900000}
+      JWT_REFRESH_TOKEN_EXPIRATION: ${JWT_REFRESH_TOKEN_EXPIRATION:-604800000}
+      FILE_UPLOAD_PATH: /app/uploads
+      SPRING_MAIL_HOST: ${MAIL_HOST}
+      SPRING_MAIL_PORT: ${MAIL_PORT:-587}
+      SPRING_MAIL_USERNAME: ${MAIL_USERNAME}
+      SPRING_MAIL_PASSWORD: ${MAIL_PASSWORD}
+      SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH: "true"
+      SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE: "true"
+      SERVER_PORT: 8080
+      LOGGING_LEVEL_ROOT: INFO
+      LOGGING_LEVEL_COM_LABELREADER: INFO
+      MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: health,info,metrics,prometheus
+      MANAGEMENT_ENDPOINT_HEALTH_SHOW_DETAILS: when_authorized
+    ports:
+      - "8080:8080"
+    volumes:
+      - backend_uploads_prod:/app/uploads
+      - backend_logs_prod:/app/logs
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - labelreader-network-prod
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '1'
+          memory: 1G
+
+  frontend:
+    build:
+      context: .
+      dockerfile: apps/frontend/Dockerfile
+      args:
+        API_URL: ${API_URL:-http://backend:8080}
+        NODE_ENV: production
+    image: labelreader-frontend:${VERSION:-latest}
+    container_name: labelreader-frontend-prod
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - nginx_logs_prod:/var/log/nginx
+    environment:
+      API_URL: ${API_URL:-http://backend:8080}
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - labelreader-network-prod
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+        reservations:
+          cpus: '0.5'
+          memory: 256M
+
+volumes:
+  mysql_data_prod:
+    driver: local
+  backend_uploads_prod:
+    driver: local
+  backend_logs_prod:
+    driver: local
+  nginx_logs_prod:
+    driver: local
+
+networks:
+  labelreader-network-prod:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.25.0.0/16
